@@ -13,7 +13,7 @@ contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
     using Counters for Counters.Counter;
     using Strings for uint256;
     // Merkle Tree root
-    bytes32 private root=0x12ebff4e31c38fe3cb4512197aed4067c43dc1a794c436a89f4f2f4af1ca1070;
+    bytes32 private root=0x4e03d5d8b9aae36645e4b3450070927392b7b2aaa9cc15e0eb85ba8d1dfe2c17;
 
     uint256 public constant PRICE = 0.003 ether;
     uint256 public wlMintBeginTimeStamp;
@@ -21,7 +21,7 @@ contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
     uint256 public revealBeginTimeStamp;
     uint256 public constant MAX_SUPPLY = 6969;
     uint256 public constant MAX_WL_SUPPLY = 1000;
-    uint256 public constant MAX_FREE_SUPPLY = 1000; // when mainnet deploy you should change this as 1000
+    uint256 public  MAX_FREE_SUPPLY = 1000; // when mainnet deploy you should change this as 1000
 
     string public baseUri;
 
@@ -81,7 +81,7 @@ contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
             _safeMint(to, tokenId);
         }
     }
-    // check if current mint status 
+    // check current mint status 
     function canWhitelistMint() public view returns(bool) {
         if ( totalWlMintedNumber + 2 <= MAX_WL_SUPPLY  && totalSupply() + 2 <= MAX_SUPPLY ) return true;
         else return false;
@@ -115,6 +115,9 @@ contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
         baseUri = _baseUri;
     }
 
+    function setFreeMintEnable() external onlyOwner {
+        MAX_FREE_SUPPLY += MAX_SUPPLY - totalSupply();
+    }
     function whiteListMint(bytes32[] memory _proof) external {
         if ( canWhitelistMint()) {
             require(!whitelistMinted[msg.sender], "You has already whitelist minted.");
