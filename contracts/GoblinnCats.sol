@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
@@ -9,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
+contract GoblinnCats is ERC721, ERC721Enumerable, Pausable, Ownable {
     using Counters for Counters.Counter;
     using Strings for uint256;
     // Merkle Tree root
@@ -24,6 +23,7 @@ contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
     uint256 public  MAX_FREE_SUPPLY = 1000; // when mainnet deploy you should change this as 1000
 
     string public baseUri;
+    bool public revealState;
 
     uint256 public totalWlMintedNumber;
     uint256 public totalFreeMintedNumber;
@@ -36,11 +36,18 @@ contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
     mapping(address => uint256) public publicMintedCount;
     Counters.Counter private _tokenIdCounter;
 
-    constructor() ERC721("MyToken", "MTK") {
+    constructor() ERC721("GoblinnCats", "GoCat") {
         wlMintBeginTimeStamp = block.timestamp;
         wlMintEndTimeStamp = wlMintBeginTimeStamp + 30 minutes; // 30min for wl mint default;
-        revealBeginTimeStamp = block.timestamp + 1 minutes; // 1hour for mainnet deploy;
-        baseUri = "https://ipfs.io/ipfs/Qmcdp97qVbkSMLBb76LrL3eUienrLYmJ6SWqG1N7JcSya6/";
+        revealBeginTimeStamp = block.timestamp + 5 minutes; // 1hour for mainnet deploy;
+        baseUri = "https://ipfs.io/ipfs/QmZCyRCiVagyD9trtoCQLJyypmsAiSkH4deNDys4hsH6B6/"; // This is prevealed image 
+    }
+
+    modifier onlyPossibleReveal() {
+        require( block.timestamp >= revealBeginTimeStamp, "It didn't reach certain time.");
+        require(!revealState, "You have already revealed");
+        _;
+        revealState = true;
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -110,8 +117,7 @@ contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
         root = _newRoot;
     }
 
-    function setBaseURI(string memory _baseUri) external onlyOwner {
-        require( block.timestamp >= revealBeginTimeStamp, "It didn't reach certain time.");
+    function setBaseURI(string memory _baseUri) external onlyOwner onlyPossibleReveal {
         baseUri = _baseUri;
     }
 
@@ -161,14 +167,17 @@ contract MyToken is ERC721, ERC721Enumerable, Pausable, Ownable {
     }
 
     function tokenURI(uint256 tokenId) public view override returns(string memory) {
-        require(_exists(tokenId), "Token Does Not Exist.");
-        return 
-            string(
-                abi.encodePacked(
-                    baseUri,
-                    tokenId.toString(),
-                    ".json"
-                )
-            );
+        require(_exists(tokenId), "Token Does Not Exist");
+        if (revealState) {
+            return
+                string(
+                    abi.encodePacked(baseUri, tokenId.toString(), ".json")
+                );
+        } else {
+            return
+                string(
+                    abi.encodePacked(baseUri)
+                );
+        }
     }
 }
